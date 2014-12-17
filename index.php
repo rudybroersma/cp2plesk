@@ -76,6 +76,7 @@ foreach($cp->addOnDomains as $key => $value) {
     echo "/opt/psa/bin/site -c $key -hosting true -hst_type phys -webspace-name $domain -www-root $dest -seo-redirect none\n";
     echo "mkdir " . $cp->base . "/" . $dest . "/webmail/\n";
     echo "echo \"Redirect 301 /webmail http://webmail." . $key . "/\" > " . $cp->base . "/" . $dest . "/webmail/.htaccess\n";
+    echo "chgrp psaserv /var/www/vhosts/" . $domain . "/" . $dest;
 };
 
 /* addOnDomains must be ran first, as subdomains will create subs under addondomains */
@@ -87,6 +88,7 @@ foreach($cp->subDomains as $key  => $value) {
     /* Create real domains instead of subdomains. cPanel allows e-mail accounts within subdomains. Plesk does not. Thus, create domain instead of subdomain */
 #    echo "/opt/psa/bin/subdomain -c " . $subdomain . " -domain " . $domain . " -www-root " . $value . " -php true\n";
     echo "/opt/psa/bin/site -c " . $subdomain . "." . $domain . " -hosting true -hst_type phys -webspace-name $domain -www-root " . $value . " -seo-redirect none\n";
+    echo "chgrp psaserv /var/www/vhosts/" . $domain . "/" . $value;
 }
 $mailDomains = array_merge(
                 array_keys($cp->addOnDomains), 
