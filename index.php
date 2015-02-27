@@ -60,7 +60,7 @@ echo "/usr/bin/find " . $cp->base . "/homedir/public_html/ -type f -print | xarg
 echo "mkdir " . $cp->base . "/homedir/public_html/webmail/\n";
 
 echo "echo \"Redirect 301 /webmail http://webmail." . $domain . "/\" > " . $cp->base . "/homedir/public_html/webmail/.htaccess\n";
-echo "cd " . $cp->base . "/homedir/public_html; /usr/bin/lftp --no-symlinks -c 'set ftp:ssl-allow false && open ftp://$username:$password@localhost && cd httpdocs && mirror -R .'\n";
+echo "cd " . $cp->base . "/homedir/public_html && /usr/bin/lftp --no-symlinks -c 'set ftp:ssl-allow false && open ftp://$username:$password@localhost && cd httpdocs && mirror -R .'\n";
 
 foreach($cp->parkedDomains as $alias => $value) {
 # Do not use domalias, as we cannot create mail addresses under aliases.
