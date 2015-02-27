@@ -52,15 +52,16 @@ echo "# Username: " . $username . "\n";
 echo "# Password: " . $password . "\n";
 echo "\n";
 echo "/opt/psa/bin/server_pref -u -min_password_strength very_weak\n";
-echo "/opt/psa/bin/customer -c $username -email $acctemail -name $username -passwd $password\n";
-echo "/opt/psa/bin/subscription -c $domain -owner $username -service-plan \"$serviceplan_name\" -ip " . IPv4 . "," . IPv6 . " -login $username -passwd $password -seo-redirect none\n";
+echo "/opt/psa/bin/customer -c $username -email $acctemail -name $username -passwd \"$password\"\n";
+echo "/opt/psa/bin/subscription -c $domain -owner $username -service-plan \"$serviceplan_name\" -ip " . IPv4 . "," . IPv6 . " -login $username -passwd \"$password\" -seo-redirect none\n";
 echo "\n";
 echo "/usr/bin/find " . $cp->base . "/homedir/public_html/ -type f -print | xargs -I {} sed -i \"s@" . $cp->homedir . "/public_html@/var/www/vhosts/" . $domain . "/httpdocs@g\" {}\n";
 echo "/usr/bin/find " . $cp->base . "/homedir/public_html/ -type f -print | xargs -I {} sed -i \"s@" . $cp->homedir . "/www@/var/www/vhosts/" . $domain . "/httpdocs@g\" {}\n";
 echo "mkdir " . $cp->base . "/homedir/public_html/webmail/\n";
+echo "chmod -R o+x /var/www/vhosts/$domain/httpdocs/\n";
 
 echo "echo \"Redirect 301 /webmail http://webmail." . $domain . "/\" > " . $cp->base . "/homedir/public_html/webmail/.htaccess\n";
-echo "cd " . $cp->base . "/homedir/public_html && /usr/bin/lftp --no-symlinks -c 'set ftp:ssl-allow false && open ftp://$username:$password@localhost && cd httpdocs && mirror -R .'\n";
+echo "cd " . $cp->base . "/homedir/public_html && /usr/bin/lftp -c 'set ftp:ssl-allow false && open ftp://$username:\"$password\"@localhost && cd httpdocs && mirror --no-symlinks -p -R .'\n";
 
 foreach($cp->parkedDomains as $alias => $value) {
 # Do not use domalias, as we cannot create mail addresses under aliases.
