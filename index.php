@@ -112,10 +112,10 @@ foreach ($cp->mailAccounts as $domain => $value) {
                 $forward = preg_replace('/,$/', '', $forward); // remove all commas
                 
                 if (!in_array($mailbox, $createdAccounts)) { 
-                    echo "/opt/psa/bin/mail -c " . $mailbox . " -mailbox false -forwarding true -forwarding-addresses add:" . $forward . "\n";
-                    echo "/opt/psa/bin/spamassassin -u " . $mailbox . " -status true -hits 5 -action del\n";
+                    echo "/opt/psa/bin/mail -c '" . $mailbox . "' -mailbox false -forwarding true -forwarding-addresses add:" . $forward . "\n";
+                    echo "/opt/psa/bin/spamassassin -u '" . $mailbox . "' -status true -hits 5 -action del\n";
                 } else {
-                    echo "/opt/psa/bin/mail -u " . $mailbox . " -forwarding true -forwarding-addresses add:" . $forward . "\n";
+                    echo "/opt/psa/bin/mail -u '" . $mailbox . "' -forwarding true -forwarding-addresses add:" . $forward . "\n";
                 }
                 array_push($createdAccounts, $mailbox);
             };
@@ -128,12 +128,12 @@ foreach ($cp->mailAccounts as $domain => $value) {
             }
             
             if (!in_array($mailbox . "@" . $domain, $createdAccounts)) { 
-                echo "/opt/psa/bin/mail -c " . $mailbox . "@" . $domain . " -mailbox true -passwd '" . $crypt . "' -passwd_type encrypted\n";
-                echo "/opt/psa/bin/spamassassin -u " . $mailbox . "@" . $domain . " -status true -hits 5 -action del\n";
-                echo "cp -R " . $cp->base . "/homedir/mail/" . $domain . "/" . $mailbox .  "/. /var/qmail/mailnames/" . $domain . "/" . $mailbox . "/Maildir/\n";
-                echo "chown -R popuser:popuser /var/qmail/mailnames/" . $domain . "/" . $mailbox . "\n";
+                echo "/opt/psa/bin/mail -c '" . $mailbox . "@" . $domain . "' -mailbox true -passwd '" . $crypt . "' -passwd_type encrypted\n";
+                echo "/opt/psa/bin/spamassassin -u '" . $mailbox . "@" . $domain . "' -status true -hits 5 -action del\n";
+                echo "cp -R '" . $cp->base . "/homedir/mail/" . $domain . "/" . $mailbox .  "/.' '/var/qmail/mailnames/" . $domain . "/" . $mailbox . "/Maildir/'\n";
+                echo "chown -R popuser:popuser '/var/qmail/mailnames/" . $domain . "/" . $mailbox . "'\n";
             } else {
-                echo "/opt/psa/bin/mail -u " . $mailbox . "@" . $domain . " -mailbox true -passwd '" . $crypt . "' -passwd_type encrypted\n";
+                echo "/opt/psa/bin/mail -u '" . $mailbox . "@" . $domain . "' -mailbox true -passwd '" . $crypt . "' -passwd_type encrypted\n";
             }
             array_push($createdAccounts, $mailbox . "@" . $domain);
         }
