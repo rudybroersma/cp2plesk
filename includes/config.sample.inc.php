@@ -1,5 +1,5 @@
 <?php
-define("VERSION", 1);
+define("VERSION", 2);
 
 /* Prior to running migration this script sets the password policy to low. Define your default setting here.
  * after all migration commands have ran it will set the password policy to the value defined here.
@@ -12,6 +12,33 @@ define("PW_POLICY", "medium");
 
 define("IPv4", "83.137.145.8");
 define("IPv6", "2a01:1b0:7999:402::8");
+
+/*
+ * Here you can define an API call (which is ran using CURL) to update the DNS
+ * servers for migrated domains. This can be for example a call to WHMCS
+ * API system or a API call to your domain registry.
+ * 
+ * NS_API_DOUPDATE: Set TRUE to do API calls. False to not do any CURL requests.
+ * NS_API_UP: HTTP Basic Auth username/password devided by colon
+ * NS_API_DATA: HTTP POST data to send
+ * NS_API_URL: HTTP URL to use.
+ * 
+ * NS_OUR_CONTROL: Domains matching these regexps as DNS are changed
+ *  * 
+ * The NS_API_DATA accepts the following parameters:
+ * #DOMAIN# - Is replaced with the domain name.
+ */
+define("NS_API_DOUPDATE", TRUE);
+define("NS_API_UP", "username:password");
+define("NS_API_PASS", "password");
+define("NS_API_DATA", "domain=#DOMAIN#&ns1=ns1.example.com&ns2=ns2.example.com");
+define("NS_API_URL", "http://myregistry.example.com/api/changens");
+define("NS_OUR_CONTROL", serialize(array('/example.com/', '/myisp.eu/')));
+
+/*
+ * Show debugging output
+ */
+define("DEBUG", FALSE);
 
 //hardcoded service plan is now removed in favor of passing the service plan number as parameter.
 //define("SERVICE_PLAN", "Name of your service plan");

@@ -1,13 +1,17 @@
 <?php
 include("includes/read.php");
 include("includes/config.inc.php");
+include("includes/color.class.php");
+include("includes/other.class.php");
+include("includes/dns.class.php");
 include("includes/plesk.class.php");
 include("includes/generic.class.php");
 
 $cp = new CPanel(BACKUP_PATH);
 $g = new Generic();
+$dns = new DNS(NS_API_DOUPDATE, NS_API_UP, NS_API_DATA, NS_API_URL, unserialize(NS_OUR_CONTROL), IPv4, IPv6, DEBUG);
 
-if (VERSION != 1) {
+if (VERSION != 2) {
     die("Version mismatch. You need to update your configuration file\n");
 };
 
@@ -43,30 +47,34 @@ $acctemail = $cp->userdata["CONTACTEMAIL"];
 $domain = $cp->mainDomain;
 
 # CREATE CUSTOMER AND SUBSCRIPTION #
-echo "# Control Panel: http://www." . $domain . ":8880\n";
+echo "# Control Panel: http://www." . $cp->mainDomain . ":8880\n";
 echo "# Username: " . $username . "\n";
 echo "# Password: " . $password . "\n";
 echo "#\n";
-echo "# FTP: ftp://ftp." . $domain . "/\n";
+echo "# FTP: ftp://ftp." . $cp->mainDomain . "/\n";
 echo "# Username: " . $username . "\n";
 echo "# Password: " . $password . "\n";
 echo "\n";
 echo "/opt/psa/bin/server_pref -u -min_password_strength very_weak\n";
 echo "/opt/psa/bin/customer -c $username -email $acctemail -name $username -passwd \"$password\"\n";
-echo "/opt/psa/bin/subscription -c $domain -owner $username -service-plan \"$serviceplan_name\" -ip " . IPv4 . "," . IPv6 . " -login $username -passwd \"$password\" -seo-redirect none\n";
+echo "/opt/psa/bin/subscription -c " . $cp->mainDomain . " -owner $username -service-plan \"$serviceplan_name\" -ip " . IPv4 . "," . IPv6 . " -login $username -passwd \"$password\" -seo-redirect none\n";
 echo "\n";
-echo "/usr/bin/find " . $cp->base . "/homedir/public_html/ -type f -print | xargs -I {} sed -i \"s@" . $cp->homedir . "/public_html@/var/www/vhosts/" . $domain . "/httpdocs@g\" {}\n";
-echo "/usr/bin/find " . $cp->base . "/homedir/public_html/ -type f -print | xargs -I {} sed -i \"s@" . $cp->homedir . "/www@/var/www/vhosts/" . $domain . "/httpdocs@g\" {}\n";
+echo "/usr/bin/find " . $cp->base . "/homedir/public_html/ -type f -print | xargs -I {} sed -i \"s@" . $cp->homedir . "/public_html@/var/www/vhosts/" . $cp->mainDomain . "/httpdocs@g\" {}\n";
+echo "/usr/bin/find " . $cp->base . "/homedir/public_html/ -type f -print | xargs -I {} sed -i \"s@" . $cp->homedir . "/www@/var/www/vhosts/" . $cp->mainDomain . "/httpdocs@g\" {}\n";
 echo "mkdir " . $cp->base . "/homedir/public_html/webmail/\n";
-echo "chmod -R o+x /var/www/vhosts/$domain/httpdocs/\n";
+echo "chmod -R o+x /var/www/vhosts/" . $cp->mainDomain . "/httpdocs/\n";
 
-echo "echo \"Redirect 301 /webmail http://webmail." . $domain . "/\" > " . $cp->base . "/homedir/public_html/webmail/.htaccess\n";
+echo "echo \"Redirect 301 /webmail http://webmail." . $cp->mainDomain . "/\" > " . $cp->base . "/homedir/public_html/webmail/.htaccess\n";
 echo "cd " . $cp->base . "/homedir/public_html && /usr/bin/lftp -c 'set ftp:ssl-allow false && open ftp://$username:\"$password\"@localhost && cd httpdocs && mirror --no-symlinks -p -R .'\n";
 
 foreach($cp->parkedDomains as $alias => $value) {
 # Do not use domalias, as we cannot create mail addresses under aliases.
 #    echo "/opt/psa/bin/domalias -c $alias -domain $domain\n";
-    echo "/opt/psa/bin/site -c $alias -hosting true -hst_type phys -webspace-name $domain -www-root httpdocs -seo-redirect none\n";
+    echo "/opt/psa/bin/site -c $alias -hosting true -hst_type phys -webspace-name " . $cp->mainDomain . " -www-root httpdocs -seo-redirect none\n";
+    
+    foreach($dns->getDNSChanges($cp->base . "/dnszones/" . $alias . ".db", $cp->userdata['IP']) as $dnschange) {
+        echo $dnschange . "\n";
+    }
 }
 
 foreach($cp->addOnDomains as $key => $value) {
@@ -74,10 +82,15 @@ foreach($cp->addOnDomains as $key => $value) {
     $dest = $cp->subDomains[$value];
     $dest = ereg_replace("^public_html/", "httpdocs/", $dest);
 
-    echo "/opt/psa/bin/site -c $key -hosting true -hst_type phys -webspace-name $domain -www-root $dest -seo-redirect none\n";
+    echo "/opt/psa/bin/site -c $key -hosting true -hst_type phys -webspace-name " . $cp->mainDomain . " -www-root $dest -seo-redirect none\n";
     echo "mkdir " . $cp->base . "/" . $dest . "/webmail/\n";
     echo "echo \"Redirect 301 /webmail http://webmail." . $key . "/\" > " . $cp->base . "/" . $dest . "/webmail/.htaccess\n";
-    echo "chgrp psaserv /var/www/vhosts/" . $domain . "/" . $dest;
+    echo "chgrp psaserv /var/www/vhosts/" . $cp->mainDomain . "/" . $dest . "\n";
+    
+    foreach($dns->getDNSChanges($cp->base . "/dnszones/" . $key . ".db", $cp->userdata['IP']) as $dnschange) {
+        echo $dnschange . "\n";
+    }
+    
 };
 
 /* addOnDomains must be ran first, as subdomains will create subs under addondomains */
@@ -88,8 +101,8 @@ foreach($cp->subDomains as $key  => $value) {
     $value = ereg_replace("^public_html/", "httpdocs/", $value);
     /* Create real domains instead of subdomains. cPanel allows e-mail accounts within subdomains. Plesk does not. Thus, create domain instead of subdomain */
 #    echo "/opt/psa/bin/subdomain -c " . $subdomain . " -domain " . $domain . " -www-root " . $value . " -php true\n";
-    echo "/opt/psa/bin/site -c " . $subdomain . "." . $domain . " -hosting true -hst_type phys -webspace-name $domain -www-root " . $value . " -seo-redirect none\n";
-    echo "chgrp psaserv /var/www/vhosts/" . $domain . "/" . $value;
+    echo "/opt/psa/bin/site -c " . $subdomain . "." . $domain . " -hosting true -hst_type phys -webspace-name " . $cp->mainDomain . " -www-root " . $value . " -seo-redirect none\n";
+    echo "chgrp psaserv /var/www/vhosts/" . $domain . "/" . $value . "\n";
 }
 $mailDomains = array_merge(
                 array_keys($cp->addOnDomains), 
@@ -100,12 +113,18 @@ $mailDomains[] = $cp->mainDomain;
 
 $createdAccounts = array();
 
+// create system account.
+echo "/opt/psa/bin/mail -c " . $cp->userdata["USER"] . "@" . $cp->mainDomain . " -mailbox true -passwd '" . $password . "' -passwd_type plain\n";
+
 foreach ($cp->mailAccounts as $domain => $value) {
     if ((array_search($domain, $mailDomains)) !== FALSE) { /* array_search can return 0 which matches false if we dont do type checking. Therefor !== IS MANDATORY */
         foreach ($cp->mailAccounts[$domain]["forwards"] as $mailbox => $forward) {
+
+            if (strpos($forward, ":fail") > -1) { $forward = "reject"; };
+            if (strpos($forward, ":fail") > -1) { $forward = "reject"; };
+            if (strpos($forward, "@") == FALSE) { $forward = $forward . "@" . $cp->mainDomain; };
+            
             if ($mailbox == "*") {
-                if (strpos($forward, ":blackhole")) { $forward = "reject"; };
-                if (strpos($forward, ":fail")) { $forward = "reject"; };
                 echo "/opt/psa/bin/domain_pref -u " . $domain . " -no_usr " . $forward . "\n";
             } else {
                 $forward = preg_replace('/\s+/', '', $forward); // remove all spaces
@@ -157,6 +176,11 @@ foreach ($cp->databases["MYSQL"]["dbusers"] as $user => $value) {
 
 }
 
+// Perform DNS changes for main domain
+foreach($dns->getDNSChanges($cp->base . "/dnszones/" . $cp->mainDomain . ".db", $cp->userdata['IP']) as $dnschange) {
+    echo $dnschange . "\n";
+}
+
 echo "/opt/psa/bin/server_pref -u -min_password_strength " . PW_POLICY . "\n";
 
 echo "/bin/sed -i \"s@/home/" . $username . "/public_html@/var/www/vhosts/" . $cp->mainDomain . "/httpdocs@g\" " . $cp->base . "/cron/" . $username . "\n";
@@ -166,8 +190,8 @@ exit;
 
 
 // Send mail to customer
-//$other->sendMail($domain, $username, $password, $backup->getEmail());
-#$other->sendMail($domain, $username, $password, "tozz@kijkt.tv");
+//$other->sendMail($cp->mainDomain, $username, $password, $backup->getEmail());
+#$other->sendMail($cp->mainDomain, $username, $password, "tozz@kijkt.tv");
 
 // DO NOT FORGET TO DO SOME DNS MAGIC!
 
