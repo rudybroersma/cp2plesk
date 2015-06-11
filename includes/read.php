@@ -125,13 +125,14 @@ class CPanel {
     }
 
     private function readMail($file) {
+        
         if (file_exists($file)) {
             $output = yaml_parse_file($file);
             #var_dump($output);
             foreach (array_keys($this->allDomains) as $domain) {
                 if (isset($output[$domain])) {
-                    foreach ($output[$domain]['accounts'] as $bla) {
-                        $mailbox = key($output[$domain]["accounts"]);
+                    foreach ($output[$domain]['accounts'] as $mailbox => $bla) {
+                        #$mailbox = key($output[$domain]["accounts"]);
                         $pw = $this->readMailPassword($mailbox, $domain);
 
                         $output[$domain]["accounts"][$mailbox]["crypt"] = $pw;
