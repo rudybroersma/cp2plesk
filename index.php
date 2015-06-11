@@ -46,6 +46,8 @@ $password = $g->generatePassword();
 $acctemail = $cp->userdata["CONTACTEMAIL"];
 $domain = $cp->mainDomain;
 
+if ($acctemail == "") { $acctemail = "system@" . $domain; };
+
 # CREATE CUSTOMER AND SUBSCRIPTION #
 echo "# Control Panel: http://www." . $cp->mainDomain . ":8880\n";
 echo "# Username: " . $username . "\n";
