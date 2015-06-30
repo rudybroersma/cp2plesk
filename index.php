@@ -1,4 +1,6 @@
 <?php
+/* index.php - cp2plesk */
+
 include("includes/cpanel.class.php");
 include("includes/config.inc.php");
 include("includes/color.class.php");
@@ -10,39 +12,102 @@ include("includes/generic.class.php");
 $cp = new CPanel(BACKUP_PATH);
 $g = new Generic();
 $dns = new DNS(NS_API_DOUPDATE, NS_API_UP, NS_API_DATA, NS_API_URL, unserialize(NS_OUR_CONTROL), IPv4, IPv6, DEBUG);
+$other = new Other(MAIL_FROM_ADDR, MAIL_FROM_NAME, SEND_MAIL, DEBUG);
+$plesk = new Plesk();
 
 if (VERSION != 2) {
     die("Version mismatch. You need to update your configuration file\n");
 };
 
-if (isset($argv[1])) {
-  $serviceplan = $argv[1];
+$arguments = $other->parseArguments($argv);
+
+if (array_key_exists("reseller", $arguments)) {
+    $reseller = $arguments['reseller'];
+    if (!$plesk->isValidReseller($reseller)) {
+        echo "Invalid reseller username given. Exiting...\n";
+        exit;
+    }
 } else {
-  $serviceplan = 0;
+    $reseller = FALSE;
 };
 
-$plesk = new Plesk();
-$sp = $plesk->getServicePlans();
+$sp = $plesk->getServicePlans($reseller);
 
-if (array_key_exists($serviceplan, $sp)) {
-  $valid_serviceplan = true;
-} else {
-  $valid_serviceplan = false;
-};
-
-if ($valid_serviceplan === false) {
-  echo "Invalid serviceplan given. Please pass the serviceplan number as parameter (eg. php index.php 5): \n\n";
+if (array_key_exists("list-serviceplans", $arguments)) {
   foreach($sp as $plan) {
     echo $plan['id'] . ": " . $plan['name'] . "\n";
   };
  
   exit;
+}
+
+if (array_key_exists("list-resellers", $arguments)) {
+  echo "login\t\t\tname\t\tcompany\n\n";
+  foreach($plesk->getResellers() as $resellerName) {
+    echo $resellerName['login'] . ":\t\tname: " . $resellerName['pname'] . "\tcompany: " . $resellerName['cname'] . "\n";
+  };
+  exit;
+}
+
+if (array_key_exists("list-username", $arguments)) {
+  echo $cp->userdata["USER"] . "\n";
+  exit;
+}
+
+if (array_key_exists("generate-password", $arguments)) {
+  echo $g->generatePassword() . "\n";
+  exit;
+}
+
+if (array_key_exists("list-email", $arguments)) {
+  echo $acctemail = $cp->userdata["CONTACTEMAIL"] . "\n";
+  exit;
+}
+
+if (array_key_exists("username", $arguments)) {
+    $username = $arguments['username'];
 } else {
-  $serviceplan_name = $sp[$serviceplan]['name'];
+    $username = $cp->userdata["USER"];
 };
 
-$username = $cp->userdata["USER"];
-$password = $g->generatePassword();
+if (array_key_exists("password", $arguments)) {
+    $password = $arguments['password'];
+} else {
+    $password = $g->generatePassword();
+};
+
+if (array_key_exists("list-domains", $arguments)) {
+    # output a list of all domains in this backup
+    echo $cp->mainDomain . "\n";
+    foreach($cp->addOnDomains as $domain) {
+        echo $domain . "\n";
+    }
+    exit;
+}
+
+// pointers do not exists in cp
+if (array_key_exists("list-pointers", $arguments)) {
+    exit;
+}
+
+if (array_key_exists("list-aliases", $arguments)) {
+    # output a list of all domains in this backup
+    foreach($cp->parkedDomains as $domain) {
+        echo $domain . "\n";
+    }
+    exit;
+}
+
+if (array_key_exists("serviceplan", $arguments) && array_key_exists($arguments['serviceplan'], $sp)) {
+  $valid_serviceplan = true;
+  $serviceplan = $arguments['serviceplan'];
+  $serviceplan_name = $sp[$serviceplan]['name'];  
+} else {
+  echo "Invalid serviceplan given. Please pass the serviceplan number as parameter (eg. php index.php --serviceplan=5): \n\n";
+  exit;
+};
+
+
 $acctemail = $cp->userdata["CONTACTEMAIL"];
 $domain = $cp->mainDomain;
 
