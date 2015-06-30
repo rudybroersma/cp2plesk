@@ -1,5 +1,5 @@
 <?php
-include("includes/read.php");
+include("includes/cpanel.class.php");
 include("includes/config.inc.php");
 include("includes/color.class.php");
 include("includes/other.class.php");
@@ -46,7 +46,7 @@ $password = $g->generatePassword();
 $acctemail = $cp->userdata["CONTACTEMAIL"];
 $domain = $cp->mainDomain;
 
-if ($acctemail == "") { $acctemail = "system@" . $domain; };
+if (strlen(trim($acctemail)) == 0) { $acctemail = $username . "@" . $domain; };
 
 # CREATE CUSTOMER AND SUBSCRIPTION #
 echo "# Control Panel: http://www." . $cp->mainDomain . ":8880\n";
@@ -161,21 +161,20 @@ foreach ($cp->mailAccounts as $domain => $value) {
     }
 }
 
-#var_dump($cp->databases);
+if (isset($cp->databases["MYSQL"])) {
+    foreach ($cp->databases["MYSQL"]["dbs"] as $db => $value) {
+        echo "/opt/psa/bin/database -c " . $db . " -domain " . $cp->mainDomain . " -type mysql\n";
+        echo "/bin/sed -i \"s@/home/" . $username . "/public_html@/var/www/vhosts/" . $cp->mainDomain . "/httpdocs@g\" " . $cp->base . "/mysql/" . $db . ".sql\n";
+        echo "/bin/sed -i \"s@/home/" . $username . "/www@/var/www/vhosts/" . $cp->mainDomain . "/httpdocs@g\" " . $cp->base . "/mysql/" . $db . ".sql\n";
+        echo "/usr/bin/mysql -uadmin -p`cat /etc/psa/.psa.shadow` " . $db . " < " . $cp->base . "/mysql/" . $db . ".sql\n";
+    }
 
-foreach ($cp->databases["MYSQL"]["dbs"] as $db => $value) {
-    echo "/opt/psa/bin/database -c " . $db . " -domain " . $cp->mainDomain . " -type mysql\n";
-    echo "/bin/sed -i \"s@/home/" . $username . "/public_html@/var/www/vhosts/" . $cp->mainDomain . "/httpdocs@g\" " . $cp->base . "/mysql/" . $db . ".sql\n";
-    echo "/bin/sed -i \"s@/home/" . $username . "/www@/var/www/vhosts/" . $cp->mainDomain . "/httpdocs@g\" " . $cp->base . "/mysql/" . $db . ".sql\n";
-    echo "/usr/bin/mysql -uadmin -p`cat /etc/psa/.psa.shadow` " . $db . " < " . $cp->base . "/mysql/" . $db . ".sql\n";
-}
-
-foreach ($cp->databases["MYSQL"]["dbusers"] as $user => $value) {
-    if ($value['pw'] == "") { $value['pw'] = $password; };
-    echo "/opt/psa/bin/database --create-dbuser " . $user . " -domain " . $cp->mainDomain . " -passwd '" . $value['pw'] . "' -type mysql -any-database\n";
-    echo "/usr/bin/mysql -uadmin -p`cat /etc/psa/.psa.shadow` mysql -e \"UPDATE mysql.user SET Password = '" . $value['pw'] . "' WHERE User = '" . $user . "'\"\n";
-    echo "/usr/bin/mysql -uadmin -p`cat /etc/psa/.psa.shadow` mysql -e \"FLUSH PRIVILEGES\"\n";
-
+    foreach ($cp->databases["MYSQL"]["dbusers"] as $user => $value) {
+        if ($value['pw'] == "") { $value['pw'] = $password; };
+        echo "/opt/psa/bin/database --create-dbuser " . $user . " -domain " . $cp->mainDomain . " -passwd '" . $value['pw'] . "' -type mysql -any-database\n";
+        echo "/usr/bin/mysql -uadmin -p`cat /etc/psa/.psa.shadow` mysql -e \"UPDATE mysql.user SET Password = '" . $value['pw'] . "' WHERE User = '" . $user . "'\"\n";
+        echo "/usr/bin/mysql -uadmin -p`cat /etc/psa/.psa.shadow` mysql -e \"FLUSH PRIVILEGES\"\n";
+    }
 }
 
 // Perform DNS changes for main domain

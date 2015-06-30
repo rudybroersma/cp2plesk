@@ -422,19 +422,23 @@ class DNS {
             return;
         }
 
-        if (preg_match("/^www$/i", $record[0])) {
+        #if (preg_match("/^www$/i", $record[0])) {
+        if (preg_match("/^www$/i", $record[0]) || preg_match("/^www.$domain$/i", $record[0])) {
             $this->removeWWWRecord($domain);
         }
 
-        if (preg_match("/^webmail$/i", $record[0])) {
+        #if (preg_match("/^webmail$/i", $record[0])) {
+        if (preg_match("/^webmail$/i", $record[0]) || preg_match("/^webmail.$domain$/i", $record[0])) {
             $this->removeWebMailRecord($domain);
         }
 
-        if (preg_match("/^mail$/i", $record[0])) {
+        #if (preg_match("/^mail$/i", $record[0])) {
+        if (preg_match("/^mail$/i", $record[0]) || preg_match("/^mail.$domain$/i", $record[0])) {
             $this->removeMailRecord($domain);
         }
 
-        if (preg_match("/^\*/", $record[0])) { // Wildcard
+        #if (preg_match("/^\*/", $record[0])) { // Wildcard
+        if (preg_match("/^\*/", $record[0]) || preg_match("/^\*.$domain$/i", $record[0])) { // Wildcard
             $this->removeWildcardRecord($domain);
         }
 
