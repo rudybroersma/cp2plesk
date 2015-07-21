@@ -196,8 +196,8 @@ class CPanel {
                     }
                     
                     if (preg_match("/^GRANT (ALL|SELECT)/", $buffer) == 1) {
-                        $buffer_split = preg_split("/('|`)/", $buffer);
-                        $output["MYSQL"]["dbs"][$buffer_split[1]] = "";
+                        $clean = str_replace('_%', '', $buffer_split[1]); //  replace user\_% with just user. This is ancient cpanel style.
+                        $output["MYSQL"]["dbs"][$clean] = "";
                     }
                     
                     
