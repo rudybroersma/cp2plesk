@@ -188,8 +188,9 @@ class CPanel {
             if ($handle) {
                 while (($buffer = fgets($handle, 4096)) !== false) {
                     $buffer = stripslashes($buffer);
+                    $buffer_split = preg_split("/('|`)/", $buffer);
+
                     if (preg_match("/^GRANT USAGE ON/", $buffer) == 1) {
-                        $buffer_split = preg_split("/('|`)/", $buffer);
                         if ($buffer_split[3] == "localhost") {
                             $output["MYSQL"]["dbusers"][$buffer_split[1]]["pw"] = $buffer_split[5];
                         }
