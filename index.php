@@ -238,7 +238,7 @@ foreach ($cp->mailAccounts as $domain => $value) {
     }
 }
 
-if (isset($cp->databases["MYSQL"])) {
+if (isset($cp->databases["MYSQL"]["dbs"])) {
     foreach ($cp->databases["MYSQL"]["dbs"] as $db => $value) {
         echo "/opt/psa/bin/database -c " . $db . " -domain " . $cp->mainDomain . " -type mysql\n";
         echo "/bin/sed -i \"s@/home/" . $username . "/public_html@/var/www/vhosts/" . $cp->mainDomain . "/httpdocs@g\" " . $cp->base . "/mysql/" . $db . ".sql\n";
