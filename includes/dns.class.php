@@ -499,8 +499,14 @@ class DNS {
                     $priority = $record[$offset + 1];
                 }
 
-                if (preg_match("/mailbackup/", $mx))
-                    break; // skip antiquated mailbackup records
+		$skip = 0;
+		foreach (unserialize(MX_IGNORE_REGEX) as $i) {
+			if (preg_match($i, $mx))
+				$skip = 1;
+		}
+
+		if ($skip == 1) 
+			break;
 
 //                if ($mx == $domain) {
  //                   $this->other->Log("DNS->checkAndRemoveExisting", "MX remains the same", false);
