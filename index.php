@@ -126,7 +126,13 @@ echo "# Username: " . $username . "\n";
 echo "# Password: " . $password . "\n";
 echo "\n";
 echo "/opt/psa/bin/server_pref -u -min_password_strength very_weak\n";
-echo "/opt/psa/bin/customer -c $username -email $acctemail -name $username -passwd \"$password\"\n";
+
+if ($reseller == FALSE) {
+  echo "/opt/psa/bin/customer -c $username -email $acctemail -name $username -passwd \"$password\"\n";
+} else {
+  echo "/opt/psa/bin/customer -c $username -email $acctemail -name $username -passwd \"$password\" -owner $reseller\n";
+}
+
 echo "/opt/psa/bin/subscription -c " . $cp->mainDomain . " -owner $username -service-plan \"$serviceplan_name\" -ip " . IPv4 . "," . IPv6 . " -login $username -passwd \"$password\" -seo-redirect none\n";
 echo "\n";
 echo "/usr/bin/find " . $cp->base . "/homedir/public_html/ -type f -print | xargs -I {} sed -i \"s@" . $cp->homedir . "/public_html@/var/www/vhosts/" . $cp->mainDomain . "/httpdocs@g\" {}\n";
