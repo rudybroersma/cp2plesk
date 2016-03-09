@@ -35,6 +35,13 @@ define("NS_API_DATA", "domain=#DOMAIN#&ns1=ns1.example.com&ns2=ns2.example.com")
 define("NS_API_URL", "http://myregistry.example.com/api/changens");
 define("NS_OUR_CONTROL", serialize(array('/example.com/', '/myisp.eu/')));
 
+/* 
+ * DNS Settings: ignore certain regexes in DNS MX record
+ * Records that match these regexes are ignored when updating the DNS
+ * zonefile.
+ */
+define("MX_IGNORE_REGEX", serialize(array("/oldisp/", "/mailbackup/")));
+
 /*
  * Show debugging output
  */
